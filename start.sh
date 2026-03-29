@@ -46,6 +46,6 @@ echo " ================================================"
 echo ""
 
 # Render uses PORT env variable
-PORT=${PORT:-8000}
+PORT=${PORT:-10000}
 
 uvicorn main:app --host 0.0.0.0 --port $PORT
