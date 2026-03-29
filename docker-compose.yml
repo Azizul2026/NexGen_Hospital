@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+
+  # ── Neo4j Graph Database ─────────────────────────────────────
+  neo4j:
+    image: neo4j:5.18-community
+    container_name: nexgen-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"   # Browser UI
+      - "7687:7687"   # Bolt protocol
+    environment:
+      NEO4J_AUTH: neo4j/nexgen123
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 1G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - ./neo4j-init.cypher:/var/lib/neo4j/import/init.cypher
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "nexgen123", "RETURN 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # ── Spring Boot Backend ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexgen-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_NEO4J_URI: bolt://neo4j:7687
+      SPRING_NEO4J_AUTHENTICATION_USERNAME: neo4j
+      SPRING_NEO4J_AUTHENTICATION_PASSWORD: nexgen123
+      JWT_SECRET: NexGenHospitalSuperSecretKey2024NexGenHospitalSuperSecretKey2024
+      JWT_EXPIRATION_MS: 86400000
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/app/static
+
+volumes:
+  neo4j_data:
+  neo4j_logs:

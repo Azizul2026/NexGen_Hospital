@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NexGen — Doctor Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#04080f;--surface:#0b1120;--surface2:#111827;--border:#1e2d47;--accent:#00d4ff;--green:#00e5a0;--red:#ff4757;--amber:#ffa500;--purple:#a855f7;--text:#e8f0fe;--muted:#6b7fa3}
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;height:100vh;z-index:100}
+  .logo{padding:24px 20px 18px;border-bottom:1px solid var(--border)}
+  .logo-mark{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accent)}.logo-mark span{color:var(--text)}
+  .logo-sub{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  .portal-badge{display:inline-block;background:rgba(0,212,255,.12);color:var(--accent);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:20px;margin-top:6px;border:1px solid rgba(0,212,255,.2)}
+  nav{flex:1;padding:14px 10px;overflow-y:auto}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--muted);transition:all .2s;margin-bottom:2px;position:relative}
+  .nav-item:hover{background:var(--surface2);color:var(--text)}.nav-item.active{background:rgba(0,212,255,.1);color:var(--accent);font-weight:500}
+  .nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--accent);border-radius:0 3px 3px 0}
+  .nav-icon{font-size:16px;width:20px;text-align:center}
+  .sidebar-footer{padding:14px;border-top:1px solid var(--border)}
+  .user-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--surface2)}
+  .ava{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+  .user-name{font-size:13px;font-weight:500}.user-role{font-size:11px;color:var(--muted)}
+  .main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+  .topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;position:sticky;top:0;z-index:50}
+  .page-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;flex:1}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .2s;font-family:'DM Sans',sans-serif}
+  .btn-p{background:var(--accent);color:#000}.btn-p:hover{background:#00b8d9}
+  .btn-g{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-g:hover{color:var(--text);border-color:var(--accent)}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .logout-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:'DM Sans',sans-serif}
+  .logout-btn:hover{border-color:var(--red);color:var(--red)}
+  .content{padding:24px;flex:1}.view{display:none}.view.active{display:block}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+  .ch{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .ct{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+  .cb{padding:20px}
+  .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+  .sc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative}
+  .sl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .sv{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin:8px 0 4px}
+  .si{position:absolute;top:16px;right:16px;font-size:24px;opacity:.3}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--border)}
+  td{padding:12px 14px;font-size:13.5px;border-bottom:1px solid rgba(30,45,71,.5);vertical-align:middle}
+  tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)}
+  .b{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .b::before{content:'';width:5px;height:5px;border-radius:50%}
+  .b-scheduled{background:rgba(168,85,247,.12);color:var(--purple)}.b-scheduled::before{background:var(--purple)}
+  .b-completed{background:rgba(0,229,160,.12);color:var(--green)}.b-completed::before{background:var(--green)}
+  .b-cancelled{background:rgba(255,71,87,.12);color:var(--red)}.b-cancelled::before{background:var(--red)}
+  .b-admitted{background:rgba(0,212,255,.12);color:var(--accent)}.b-admitted::before{background:var(--accent)}
+  .b-critical{background:rgba(255,71,87,.12);color:var(--red)}.b-critical::before{background:var(--red)}
+  .b-discharged{background:rgba(0,229,160,.12);color:var(--green)}.b-discharged::before{background:var(--green)}
+  .b-outpatient{background:rgba(255,165,0,.12);color:var(--amber)}.b-outpatient::before{background:var(--amber)}
+  .ov{position:fixed;inset:0;background:rgba(4,8,15,.85);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
+  .ov.open{display:flex}
+  .mo{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:620px;max-width:95vw;max-height:90vh;overflow-y:auto}
+  .moh{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
+  .mot{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+  .moc{cursor:pointer;color:var(--muted);font-size:20px}.moc:hover{color:var(--red)}
+  .mob{padding:24px}
+  .mof{display:flex;gap:10px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border)}
+  .fg{margin-bottom:16px}.fl{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;display:block}
+  .fi{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box}
+  .fi:focus{border-color:var(--accent)}textarea.fi{resize:vertical}
+  .f2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .em{text-align:center;padding:48px;color:var(--muted)}.em-i{font-size:40px;margin-bottom:10px}
+  .pr{display:flex;align-items:center;gap:14px;padding:14px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);margin-bottom:10px;transition:border-color .2s}
+  .pr:hover{border-color:rgba(0,212,255,.3)}
+  .pa{width:44px;height:44px;border-radius:50%;background:rgba(0,212,255,.1);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--accent);flex-shrink:0}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="logo"><div class="logo-mark">Nex<span>Gen</span></div><div class="logo-sub">Hospital Management</div><div class="portal-badge">Doctor Portal</div></div>
+  <nav>
+    <div class="nav-item active" onclick="sv('dashboard',this)"><span class="nav-icon">⬛</span>Dashboard</div>
+    <div class="nav-item" onclick="sv('patients',this)"><span class="nav-icon">🧑‍⚕️</span>My Patients</div>
+    <div class="nav-item" onclick="sv('appointments',this)"><span class="nav-icon">📅</span>Appointments</div>
+    <div class="nav-item" onclick="sv('records',this)"><span class="nav-icon">📋</span>Medical Records</div>
+    <div class="nav-item" onclick="sv('profile',this)"><span class="nav-icon">👨‍⚕️</span>My Profile</div>
+  </nav>
+  <div class="sidebar-footer"><div class="user-card"><div class="ava" id="sideAva">D</div><div><div class="user-name" id="sideName">Loading…</div><div class="user-role">Doctor</div></div></div></div>
+</aside>
+<div class="main">
+  <div class="topbar"><div class="page-title" id="pt">Dashboard</div><button class="logout-btn" onclick="doLogout()">Sign Out</button></div>
+  <div class="content">
+    <div class="view active" id="view-dashboard">
+      <div class="sg">
+        <div class="sc"><div class="si">🧑‍⚕️</div><div class="sl">My Patients</div><div class="sv" id="cP" style="color:var(--accent)">—</div></div>
+        <div class="sc"><div class="si">📅</div><div class="sl">Today's Appts</div><div class="sv" id="cT" style="color:var(--purple)">—</div></div>
+        <div class="sc"><div class="si">⚠️</div><div class="sl">Critical</div><div class="sv" id="cC" style="color:var(--red)">—</div></div>
+        <div class="sc"><div class="si">✅</div><div class="sl">Pending</div><div class="sv" id="cPe" style="color:var(--green)">—</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card"><div class="ch"><div class="ct">Today's Schedule</div></div><div class="cb" id="dToday"></div></div>
+        <div class="card"><div class="ch"><div class="ct">Active Patients</div></div><div class="cb" id="dPats"></div></div>
+      </div>
+    </div>
+    <div class="view" id="view-patients"><div id="patList"></div></div>
+    <div class="view" id="view-appointments">
+      <div class="card">
+        <div class="ch"><div class="ct">My Appointments</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-g btn-sm" onclick="fa('all')">All</button>
+            <button class="btn btn-g btn-sm" onclick="fa('SCHEDULED')">Scheduled</button>
+            <button class="btn btn-g btn-sm" onclick="fa('COMPLETED')">Completed</button>
+          </div>
+        </div>
+        <table><thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead><tbody id="aTbl"></tbody></table>
+      </div>
+    </div>
+    <div class="view" id="view-records">
+      <div class="card"><div class="ch"><div class="ct">Medical Records</div><button class="btn btn-p btn-sm" onclick="openRM()">+ New Record</button></div><div class="cb" id="recSel"></div></div>
+    </div>
+    <div class="view" id="view-profile"><div class="card" id="docPCard"><div style="padding:40px;text-align:center;color:var(--muted)">Loading…</div></div></div>
+  </div>
+</div>
+
+<!-- Complete Appointment Modal -->
+<div class="ov" id="compMod">
+  <div class="mo">
+    <div class="moh"><div class="mot" id="compTitle">Complete Appointment</div><div class="moc" onclick="cm('compMod')">✕</div></div>
+    <div class="mob">
+      <input type="hidden" id="compId">
+      <div class="fg"><label class="fl">Prescription</label><textarea class="fi" id="compRx" rows="4" placeholder="Medications, dosage, frequency…"></textarea></div>
+      <div class="fg"><label class="fl">Clinical Notes</label><textarea class="fi" id="compNotes" rows="3" placeholder="Examination findings, advice…"></textarea></div>
+    </div>
+    <div class="mof"><button class="btn btn-g" onclick="cm('compMod')">Cancel</button><button class="btn btn-p" onclick="subComplete()">Mark Complete</button></div>
+  </div>
+</div>
+
+<!-- New Record Modal -->
+<div class="ov" id="recMod">
+  <div class="mo">
+    <div class="moh"><div class="mot">New Medical Record</div><div class="moc" onclick="cm('recMod')">✕</div></div>
+    <div class="mob">
+      <div class="f2">
+        <div class="fg"><label class="fl">Patient Username</label><input class="fi" id="rPat" placeholder="e.g. meera.g" list="pList"></div>
+        <div class="fg"><label class="fl">Visit Type</label><select class="fi" id="rVType"><option value="OPD">OPD</option><option value="IPD">IPD</option><option value="EMERGENCY">Emergency</option><option value="FOLLOW_UP">Follow-up</option></select></div>
+      </div>
+      <datalist id="pList"></datalist>
+      <div class="fg"><label class="fl">Chief Complaint</label><input class="fi" id="rComp" placeholder="Primary reason for visit"></div>
+      <div class="fg"><label class="fl">Diagnosis</label><input class="fi" id="rDiag" placeholder="Clinical diagnosis"></div>
+      <div class="fg"><label class="fl">Symptoms</label><textarea class="fi" id="rSymp" rows="2" placeholder="Reported symptoms"></textarea></div>
+      <div class="fg"><label class="fl">Examination</label><textarea class="fi" id="rExam" rows="2" placeholder="Physical examination findings"></textarea></div>
+      <div class="fg"><label class="fl">Prescription</label><textarea class="fi" id="rRx" rows="3" placeholder="Medicines, dosage, duration"></textarea></div>
+      <div class="f2">
+        <div class="fg"><label class="fl">Lab Tests</label><input class="fi" id="rLab" placeholder="CBC, ECG, MRI…"></div>
+        <div class="fg"><label class="fl">Lab Results</label><input class="fi" id="rLabR" placeholder="Results or Pending"></div>
+      </div>
+      <div class="fg"><label class="fl">Vitals (JSON)</label><input class="fi" id="rVit" placeholder='{"bp":"120/80","pulse":72,"temp":"98.6F","spo2":"98%"}'></div>
+      <div class="f2">
+        <div class="fg"><label class="fl">Next Visit</label><input class="fi" id="rNext" type="date"></div>
+        <div class="fg"><label class="fl">Notes</label><input class="fi" id="rNotes" placeholder="Additional notes"></div>
+      </div>
+    </div>
+    <div class="mof"><button class="btn btn-g" onclick="cm('recMod')">Cancel</button><button class="btn btn-p" onclick="subRecord()">Save Record</button></div>
+  </div>
+</div>
+
+<script>
+const BASE='http://127.0.0.1:8000/api';
+
+let tok='',uname='',pats=[],allAppts=[],docProfile=null;
+
+// ================= INIT =================
+function init(){
+  tok=localStorage.getItem('nexgen_token');
+  uname=localStorage.getItem('nexgen_username');
+
+  const role=localStorage.getItem('nexgen_role');
+  const name=localStorage.getItem('nexgen_name') || uname;
+
+  if(!tok || role!=='DOCTOR'){
+    location.href='login.html';
+    return;
+  }
+
+  document.getElementById('sideName').textContent=name;
+  document.getElementById('sideAva').textContent=name.charAt(0).toUpperCase();
+
+  loadAll();
+}
+
+// ================= TOAST =================
+function toast(msg,type='success'){
+  const c={success:'#00e5a0',error:'#ff4757',warn:'#ffa500',info:'#00d4ff'};
+
+  let el=document.getElementById('tc');
+  if(!el){
+    el=document.createElement('div');
+    el.id='tc';
+    el.style.cssText='position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:9999';
+    document.body.appendChild(el);
+  }
+
+  const t=document.createElement('div');
+  t.style.cssText=`background:#0b1120;color:#fff;border-left:4px solid ${c[type]};padding:10px 16px;border-radius:8px`;
+  t.textContent=msg;
+  el.appendChild(t);
+
+  setTimeout(()=>{
+    t.style.opacity='0';
+    setTimeout(()=>t.remove(),300);
+  },3000);
+}
+
+// ================= API =================
+async function ap(path,method='GET',body){
+  try{
+    const res = await fetch(BASE+path,{
+      method,
+      headers:{
+        'Authorization':'Bearer '+tok,
+        'Content-Type':'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+
+    const json = await res.json().catch(()=>({success:false}));
+
+    if(!res.ok){
+      if(res.status===401) doLogout();
+      throw new Error(json.message || json.detail || 'Request failed');
+    }
+
+    return json;
+
+  }catch(e){
+    toast(e.message,'error');
+    return {success:false};
+  }
+}
+
+// ================= LOAD =================
+async function loadAll(){
+  const [pr,pa,aa,ta] = await Promise.all([
+    ap('/doctor/profile'),
+    ap('/doctor/patients'),
+    ap('/doctor/appointments'),
+    ap('/doctor/appointments/today')
+  ]);
+
+  docProfile = pr.success ? pr.data : null;
+  pats       = pa.success ? pa.data || [] : [];
+  allAppts   = aa.success ? aa.data || [] : [];
+
+  const todayList = ta.success ? ta.data || [] : [];
+
+  buildDash(todayList);
+  buildPatList();
+  buildAppts();
+  fillPDL();
+}
+
+// ================= DASHBOARD =================
+function buildDash(today){
+  document.getElementById('cP').textContent = pats.length;
+  document.getElementById('cT').textContent = today.length;
+  document.getElementById('cC').textContent =
+    pats.filter(p=>p.status==='CRITICAL').length;
+  document.getElementById('cPe').textContent =
+    allAppts.filter(a=>a.status==='SCHEDULED').length;
+
+  // TODAY LIST
+  document.getElementById('dToday').innerHTML =
+    today.length ? today.map(a=>`
+      <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #1e2d47">
+        <b style="color:#00d4ff">${a.appointmentTime}</b>
+        <div style="flex:1">${a.patientName || a.patientUsername}</div>
+        <span class="b b-${(a.status||'').toLowerCase()}">${a.status}</span>
+      </div>
+    `).join('') :
+    `<div class="em">No appointments</div>`;
+
+  // PATIENTS
+  document.getElementById('dPats').innerHTML =
+    pats.slice(0,5).map(p=>`
+      <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #1e2d47">
+        <div>${p.fullName || p.username}</div>
+        <span class="b b-${(p.status||'').toLowerCase()}">${p.status}</span>
+      </div>
+    `).join('');
+}
+
+// ================= PATIENT LIST =================
+function buildPatList(){
+  document.getElementById('patList').innerHTML =
+    pats.map(p=>`
+      <div class="pr">
+        <div class="pa">${(p.fullName||'?')[0]}</div>
+        <div style="flex:1">
+          <div>${p.fullName || p.username}</div>
+          <div style="font-size:12px;color:#6b7fa3">${p.diagnosis || '-'}</div>
+        </div>
+        <span class="b b-${(p.status||'').toLowerCase()}">${p.status}</span>
+      </div>
+    `).join('');
+}
+
+// ================= APPOINTMENTS =================
+function buildAppts(filter='all'){
+  const list = filter==='all'
+    ? allAppts
+    : allAppts.filter(a=>a.status===filter);
+
+  document.getElementById('aTbl').innerHTML =
+    list.map(a=>`
+      <tr>
+        <td>${a.appointmentDate || '-'}</td>
+        <td>${a.appointmentTime || '-'}</td>
+        <td>${a.patientName || a.patientUsername}</td>
+        <td>${(a.type||'').replace(/_/g,' ')}</td>
+        <td><span class="b b-${(a.status||'').toLowerCase()}">${a.status}</span></td>
+        <td>
+          ${a.status==='SCHEDULED'
+            ? `<button class="btn btn-p btn-sm" onclick="openComp(${a.id})">Done</button>`
+            : '-'}
+        </td>
+      </tr>
+    `).join('');
+}
+
+function fa(f){ buildAppts(f); }
+
+// ================= COMPLETE =================
+function openComp(id){
+  document.getElementById('compId').value=id;
+  document.getElementById('compMod').classList.add('open');
+}
+
+async function subComplete(){
+  const id = compId.value;
+
+  const res = await ap(`/doctor/appointments/${id}/complete`,'PATCH',{
+    notes:compNotes.value,
+    prescription:compRx.value
+  });
+
+  cm('compMod');
+
+  if(res.success){
+    toast('Completed','success');
+    loadAll();
+  }
+}
+
+// ================= RECORD =================
+function openRM(){
+  document.getElementById('recMod').classList.add('open');
+}
+
+async function subRecord(){
+  const body={
+    patientUsername:rPat.value,
+    visitType:rVType.value,
+    diagnosis:rDiag.value,
+    prescription:rRx.value,
+    notes:rNotes.value
+  };
+
+  if(!body.patientUsername){
+    toast('Enter patient username','error');
+    return;
+  }
+
+  const res = await ap('/doctor/records','POST',body);
+
+  if(res.success){
+    toast('Saved','success');
+    cm('recMod');
+  }
+}
+
+// ================= HELPERS =================
+function fillPDL(){
+  document.getElementById('pList').innerHTML =
+    pats.map(p=>`<option value="${p.username}">`).join('');
+}
+
+function cm(id){
+  document.getElementById(id).classList.remove('open');
+}
+
+function sv(name,el){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+
+  document.getElementById('view-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+
+  document.getElementById('pt').textContent=name;
+}
+
+// ================= LOGOUT =================
+function doLogout(){
+  ['nexgen_token','nexgen_username','nexgen_role','nexgen_name']
+    .forEach(k=>localStorage.removeItem(k));
+
+  location.href='login.html';
+}
+
+// ================= START =================
+init();
+</script>
+</body>
+</html>

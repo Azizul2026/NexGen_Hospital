@@ -1,0 +1,129 @@
+<script src="js/api.js"></script>
+
+<!-- ✅ TOAST SYSTEM -->
+<script>
+function toast(msg,type='info'){
+  const colors = {
+    success:'#00e5a0',
+    error:'#ff4757',
+    warn:'#ffa500',
+    info:'#00d4ff'
+  };
+
+  let container = document.getElementById('toastBox');
+
+  if(!container){
+    container = document.createElement('div');
+    container.id = 'toastBox';
+    container.style.cssText = `
+      position:fixed;
+      bottom:20px;
+      right:20px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      z-index:9999;
+    `;
+    document.body.appendChild(container);
+  }
+
+  const el = document.createElement('div');
+  el.style.cssText = `
+    background:#0b1120;
+    color:#fff;
+    padding:12px 18px;
+    border-radius:10px;
+    border-left:4px solid ${colors[type]};
+    font-size:13px;
+    box-shadow:0 5px 20px rgba(0,0,0,.4);
+  `;
+  el.textContent = msg;
+
+  container.appendChild(el);
+
+  setTimeout(()=>{
+    el.style.opacity='0';
+    el.style.transition='opacity .3s';
+    setTimeout(()=>el.remove(),300);
+  },3000);
+}
+</script>
+
+<script>
+const hints = {
+  ADMIN: 'Admin: full control — patients, doctors, appointments, reports',
+  DOCTOR: 'Doctor: view your patients & create medical records',
+  PATIENT: 'Patient: view your own records, appointments & profile'
+};
+
+function selectRole(role, el){
+  document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('hintText').textContent = hints[role];
+  document.getElementById('hintBadge').classList.add('show');
+}
+
+function fillDemo(u,p,role){
+  document.getElementById('username').value = u;
+  document.getElementById('password').value = p;
+  const tab = document.querySelector(`.role-tab[data-role="${role}"]`);
+  if(tab) selectRole(role, tab);
+}
+
+function togglePwd(){
+  const i = document.getElementById('password');
+  const b = document.getElementById('eyeBtn');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  b.textContent = i.type === 'password' ? '👁' : '🙈';
+}
+
+async function doLogin(){
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+
+  if(!username || !password){
+    toast('Please enter username and password','error');
+    return;
+  }
+
+  btn.classList.add('loading');
+  document.getElementById('btnText').textContent = 'Signing in…';
+
+  try {
+    const res = await API.login(username, password);
+
+    toast('Login successful','success');
+
+    const role = res.role?.toLowerCase();
+
+    setTimeout(()=>{
+      window.location.href =
+        role === 'admin' ? 'admin.html' :
+        role === 'doctor' ? 'doctor.html' :
+        'patient.html';
+    }, 800);
+
+  } catch (e) {
+    toast(e.message || 'Login failed','error');
+  } finally {
+    btn.classList.remove('loading');
+    document.getElementById('btnText').textContent = 'Sign In';
+  }
+}
+
+// ENTER KEY
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter') doLogin();
+});
+
+// AUTO REDIRECT IF LOGGED IN
+const stored = localStorage.getItem('nexgen_role');
+if(stored && localStorage.getItem('nexgen_token')){
+  const role = stored.toLowerCase();
+  window.location.href =
+    role === 'admin' ? 'admin.html' :
+    role === 'doctor' ? 'doctor.html' :
+    'patient.html';
+}
+</script>
