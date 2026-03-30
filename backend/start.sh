@@ -1,51 +1,25 @@
 #!/bin/bash
-# NexGen Hospital - Start Script (Fixed for Render + Local)
 
-set -e
-
-echo ""
-echo " ================================================"
-echo "  NexGen Hospital Management System"
-echo " ================================================"
-echo ""
+echo "========================================"
+echo "🚀 Starting NexGen Hospital API"
+echo "========================================"
 
 # -------------------------------
-# Check Python
+# Use Render PORT (IMPORTANT)
 # -------------------------------
-if ! command -v python3 &>/dev/null; then
-    echo " [ERROR] Python 3 not found!"
-    exit 1
-fi
-
-echo " [OK] $(python3 --version)"
+PORT=${PORT:-10000}
+echo "🌐 Using PORT: $PORT"
 
 # -------------------------------
-# Create virtual environment
+# Install dependencies (Render safe)
 # -------------------------------
-if [ ! -d "venv" ]; then
-    echo " [SETUP] Creating virtual environment..."
-    python3 -m venv venv
-fi
-
-source venv/bin/activate
-
-# -------------------------------
-# Install dependencies
-# -------------------------------
-echo " [SETUP] Installing dependencies..."
+echo "📦 Installing dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
 # -------------------------------
-# Start Server
+# Start FastAPI
 # -------------------------------
-echo ""
-echo " ================================================"
-echo "  Starting NexGen API Server..."
-echo " ================================================"
-echo ""
+echo "🔥 Launching server..."
 
-# Render uses PORT env variable
-PORT=${PORT:-10000}
-
-uvicorn main:app --host 0.0.0.0 --port $PORT
+exec uvicorn main:app --host 0.0.0.0 --port $PORT
