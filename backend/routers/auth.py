@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from core.security import create_access_token, create_refresh_token
+from core.security import create_access_token, create_refresh_token, verify_token
 from core.database import db
 from passlib.context import CryptContext
 
@@ -7,24 +7,34 @@ router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# 🔐 SAFE PASSWORD (bcrypt limit fix)
+def safe_pwd(p: str):
+    return (p or "")[:72]
+
 
 # ================= LOGIN =================
 @router.post("/login")
 def login(data: dict):
-
     username = data.get("username")
     password = data.get("password")
 
-    # 🔍 FIND USER
-    user = db.run_one("MATCH (u:User {username:$u}) RETURN u", u=username)
+    # ❌ VALIDATION
+    if not username or not password:
+        raise HTTPException(400, "Username and password required")
 
-    if not user:
+    # 🔍 FIND USER
+    row = db.run_one("MATCH (u:User {username:$u}) RETURN u", u=username)
+
+    if not row:
         raise HTTPException(401, "Invalid username or password")
 
-    user = user["u"]
+    user = row["u"]
 
-    # 🔐 VERIFY PASSWORD
-    if not pwd_context.verify(password, user["password"]):
+    # 🔐 VERIFY PASSWORD (FIXED)
+    try:
+        if not pwd_context.verify(safe_pwd(password), user["password"]):
+            raise HTTPException(401, "Invalid username or password")
+    except Exception:
         raise HTTPException(401, "Invalid username or password")
 
     # 🔑 CREATE TOKENS
@@ -36,7 +46,7 @@ def login(data: dict):
     access_token = create_access_token(payload)
     refresh_token = create_refresh_token(payload)
 
-    # ✅ RETURN FORMAT (VERY IMPORTANT)
+    # ✅ RESPONSE (MATCHES FRONTEND)
     return {
         "success": True,
         "data": {
@@ -44,7 +54,7 @@ def login(data: dict):
             "refresh_token": refresh_token,
             "username": user["username"],
             "role": user["role"],
-            "fullName": user.get("full_name", "")
+            "fullName": user.get("full_name", user["username"])
         }
     }
 
@@ -57,7 +67,6 @@ def refresh(data: dict):
     if not refresh_token:
         raise HTTPException(400, "Missing refresh token")
 
-    from core.security import verify_token
     payload = verify_token(refresh_token)
 
     if not payload:
@@ -66,5 +75,8 @@ def refresh(data: dict):
     new_access = create_access_token(payload)
 
     return {
-        "access_token": new_access
+        "success": True,
+        "data": {
+            "token": new_access
+        }
     }
