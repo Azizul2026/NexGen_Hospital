@@ -85,8 +85,8 @@ app.add_middleware(
         "https://nex-gen-hospital-app.vercel.app"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=[""],
+    allow_headers=[""],
 )
 # ─────────────────────────────────────────────
 # 🔗 ROUTERS
