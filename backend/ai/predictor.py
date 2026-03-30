@@ -5,9 +5,13 @@ import joblib
 import os
 
 # ================= PATH =================
-DATA_PATH = r"C:\Users\ASUS\Downloads\nexgen-hospital-system (1)\backend\ai\data\hospital_data.csv"
 
-MODEL_DIR = os.path.join("ai", "models")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DATA_PATH = os.path.join(BASE_DIR, "data", "hospital_data.csv")
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+
+# create models folder if not exists
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 DISEASE_MODEL_PATH = os.path.join(MODEL_DIR, "disease_model.pkl")
@@ -16,7 +20,14 @@ ICU_MODEL_PATH = os.path.join(MODEL_DIR, "icu_model.pkl")
 # ================= LOAD DATA =================
 print("📊 Loading dataset...")
 
-df = pd.read_csv(DATA_PATH, sep="\t", engine="python")
+# FIX: handle comma OR tab file
+try:
+    df = pd.read_csv(DATA_PATH)
+    if len(df.columns) == 1:
+        df = pd.read_csv(DATA_PATH, sep="\t")
+except Exception as e:
+    raise ValueError(f"❌ Error loading dataset: {e}")
+
 print("✅ Dataset loaded:", df.shape)
 print("Columns:", df.columns.tolist())
 
@@ -78,13 +89,17 @@ disease_model = joblib.load(DISEASE_MODEL_PATH)
 icu_model = joblib.load(ICU_MODEL_PATH)
 
 # ================= AI FUNCTIONS =================
+
 def predict_disease(age, bp, sugar, heart_rate, spo2):
-    data = [[age, bp, sugar, heart_rate, spo2]]
+    data = pd.DataFrame([[age, bp, sugar, heart_rate, spo2]],
+                        columns=['age', 'bp', 'sugar', 'heart_rate', 'spo2'])
     return str(disease_model.predict(data)[0])
 
 
 def predict_icu(age, bp, sugar, heart_rate, spo2):
-    data = [[age, bp, sugar, heart_rate, spo2]]
+    data = pd.DataFrame([[age, bp, sugar, heart_rate, spo2]],
+                        columns=['age', 'bp', 'sugar', 'heart_rate', 'spo2'])
+
     pred = int(icu_model.predict(data)[0])
     prob = float(icu_model.predict_proba(data)[0][1]) * 100
 
@@ -94,7 +109,6 @@ def predict_icu(age, bp, sugar, heart_rate, spo2):
     }
 
 
-# ⭐ NEW (THIS FIXES YOUR ERROR)
 def risk_score(age, bp, sugar, heart_rate, spo2):
     icu_data = predict_icu(age, bp, sugar, heart_rate, spo2)
 
@@ -117,29 +131,17 @@ def risk_score(age, bp, sugar, heart_rate, spo2):
     }
 
 
-# ================= TEST =================
-print("\n🔍 Testing prediction...")
-
-sample = [60, 170, 220, 100, 90]
-
-print("Disease Prediction:", predict_disease(*sample))
-print("ICU Prediction:", predict_icu(*sample))
-print("Risk Score:", risk_score(*sample))
-
 # ================= APPOINTMENT PREDICTION =================
+
 def predict_appointments(month):
-    """
-    Simple AI forecast (dummy ML logic for now)
-    """
     import random
 
     base = 100
 
-    # Simulate seasonal trend
     if month in [11, 12, 1]:
-        base += 40   # winter spike
+        base += 40
     elif month in [4, 5]:
-        base += 20   # summer
+        base += 20
     else:
         base += 10
 
@@ -149,3 +151,28 @@ def predict_appointments(month):
         "month": month,
         "predicted_appointments": prediction
     }
+
+
+# ================= SIMPLE CHATBOT =================
+
+def chatbot(message: str):
+    message = message.lower()
+
+    if "fever" in message:
+        return "You may have an infection. Please consult a doctor."
+    elif "headache" in message:
+        return "Stay hydrated and rest. If severe, see a doctor."
+    elif "hello" in message:
+        return "Hello! How can I help you?"
+    else:
+        return "Please consult a doctor for proper diagnosis."
+
+
+# ================= TEST =================
+print("\n🔍 Testing prediction...")
+
+sample = [60, 170, 220, 100, 90]
+
+print("Disease Prediction:", predict_disease(*sample))
+print("ICU Prediction:", predict_icu(*sample))
+print("Risk Score:", risk_score(*sample))
