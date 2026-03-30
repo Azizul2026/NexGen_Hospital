@@ -22,7 +22,7 @@ python-dotenv==1.0.1
 # ── AI / ML (ready for future predictions) ─────────────────
 numpy==2.3.2
 pandas==2.3.3
-scikit-learn==1.4.2
+scikit-learn==1.7.2
 joblib==1.4.2
 
 # ── Utilities ──────────────────────────────────────────────
