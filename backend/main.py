@@ -30,15 +30,13 @@ logger = logging.getLogger("nexgen")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🏥 NexGen Hospital starting...")
-
     try:
         db.connect()
-        seed_all()   # ✅ IMPORTANT (creates admin user on Render)
+        seed_all()   # create admin if not exists
         logger.info("✅ Database connected & seeded")
     except Exception as e:
         logger.error(f"❌ Startup error: {e}")
 
-    # 🔥 IMPORTANT FOR RENDER
     port = os.environ.get("PORT", "10000")
     logger.info(f"🚀 Running on port {port}")
 
@@ -53,11 +51,25 @@ async def lifespan(app: FastAPI):
 # ─────────────────────────────────────────────
 app = FastAPI(
     title="NexGen Hospital API",
-    description="Hospital Management System with AI + Analytics + Security",
+    description="Hospital Management System",
     version="3.0.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc"
+)
+
+
+# ─────────────────────────────────────────────
+# 🔥 CORS (FINAL FIX)
+# ─────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://nex-gen-hospital-app.vercel.app"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],   # ✅ FIXED
+    allow_headers=["*"],   # ✅ FIXED
 )
 
 
@@ -67,27 +79,13 @@ app = FastAPI(
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
-
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"   # ✅ allows docs
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-
     return response
 
 
-# ─────────────────────────────────────────────
-# 🌍 CORS (FIXED FOR VERCEL)
-# ─────────────────────────────────────────────
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://nex-gen-hospital-app.vercel.app"
-    ],
-    allow_credentials=True,
-    allow_methods=[""],
-    allow_headers=[""],
-)
 # ─────────────────────────────────────────────
 # 🔗 ROUTERS
 # ─────────────────────────────────────────────
@@ -99,7 +97,7 @@ app.include_router(ai.router)
 
 
 # ─────────────────────────────────────────────
-# 📁 OPTIONAL FRONTEND SERVING
+# 📁 FRONTEND (OPTIONAL)
 # ─────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "..", "frontend")
@@ -137,7 +135,7 @@ if os.path.isdir(FRONTEND_DIR):
 
 
 # ─────────────────────────────────────────────
-# ❤️ HEALTH CHECK
+# ❤️ HEALTH
 # ─────────────────────────────────────────────
 @app.get("/health")
 def health():
@@ -149,7 +147,7 @@ def health():
 
 
 # ─────────────────────────────────────────────
-# ℹ️ SYSTEM INFO
+# ℹ️ INFO
 # ─────────────────────────────────────────────
 @app.get("/info")
 def info():
@@ -158,15 +156,11 @@ def info():
         "version": "3.0.0",
         "features": [
             "JWT Authentication",
-            "Refresh Tokens",
             "Admin Dashboard",
             "Doctor Portal",
             "Patient Portal",
-            "AI Disease Prediction",
-            "Risk Scoring",
-            "ICU Prediction",
-            "Revenue Analytics",
-            "AI Forecasting",
-            "Security Hardening"
+            "AI Prediction",
+            "Analytics",
+            "Security"
         ]
     }
