@@ -12,7 +12,7 @@ const API = (() => {
 
   const headers = () => ({
     "Content-Type": "application/json",
-    ...(token() && { Authorization: `Bearer ${token()}` })
+    ...(token() && { Authorization: `Bearer ${token}` })
   });
 
   // ================= CORE REQUEST =================
@@ -24,15 +24,16 @@ const API = (() => {
         ...(body && { body: JSON.stringify(body) })
       });
 
-      // 🔁 Handle unauthorized
+      // 🔁 HANDLE UNAUTHORIZED
       if (res.status === 401) {
-        throw new Error("Unauthorized — please login again");
+        logout();
+        throw new Error("Session expired. Please login again.");
       }
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Request failed");
+        throw new Error(data.detail || data.message || "Request failed");
       }
 
       return data;
@@ -112,9 +113,19 @@ const API = (() => {
 
   // ================= ADMIN APIs =================
 
-  // 🔥 CREATE USER (NEW)
+  // 🔥 CREATE USER
   async function createUser(data) {
     return await post("/api/admin/create-user", data);
+  }
+
+  // 🔥 DELETE USER
+  async function deleteUser(username) {
+    return await del(`/api/admin/user/${username}`);
+  }
+
+  // 🔥 UPDATE USER
+  async function updateUser(username, data) {
+    return await put(`/api/admin/user/${username}`, data);
   }
 
   async function getPatients() {
@@ -178,6 +189,8 @@ const API = (() => {
 
     // 🔥 Admin
     createUser,
+    deleteUser,
+    updateUser,
     getPatients,
     addPatient,
     getDoctors,
@@ -195,6 +208,7 @@ const API = (() => {
   };
 
 })();
+
 
 // ================= TOAST =================
 function toast(msg, type = "success") {
@@ -222,14 +236,4 @@ function toast(msg, type = "success") {
   document.body.appendChild(el);
 
   setTimeout(() => el.remove(), 3000);
-}
-
-// DELETE USER
-async function deleteUser(username){
-  return await del(`/api/admin/user/${username}`);
-}
-
-// UPDATE USER
-async function updateUser(username, data){
-  return await put(`/api/admin/user/${username}`, data);
 }
