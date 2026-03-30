@@ -65,16 +65,12 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://nex-gen-hospital-app.vercel.app",
-        "http://localhost:3000"
+        "https://nex-gen-hospital-app.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
-@app.get("/cors-test")
-def cors_test():
-    return {"msg": "CORS WORKING"}
 
 # ─────────────────────────────────────────────
 # 🔐 SECURITY HEADERS
