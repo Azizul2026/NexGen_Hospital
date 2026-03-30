@@ -223,3 +223,13 @@ function toast(msg, type = "success") {
 
   setTimeout(() => el.remove(), 3000);
 }
+
+// DELETE USER
+async function deleteUser(username){
+  return await del(`/api/admin/user/${username}`);
+}
+
+// UPDATE USER
+async function updateUser(username, data){
+  return await put(`/api/admin/user/${username}`, data);
+}
