@@ -3,40 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-
 <title>NexGen — Admin Portal</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-:root{
---bg:#04080f;--surface:#0b1120;--border:#1e2d47;
---accent:#00d4ff;--green:#00e5a0;--red:#ff4757;
---amber:#ffa500;--text:#e8f0fe;--muted:#6b7fa3
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans';background:var(--bg);color:var(--text);display:flex}
-
-.sidebar{width:240px;background:var(--surface);height:100vh;position:fixed}
-.main{margin-left:240px;flex:1}
-
-.topbar{height:60px;background:var(--surface);display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--border)}
-
+body{background:#04080f;color:white;font-family:'DM Sans';display:flex;margin:0}
+.sidebar{width:220px;background:#0b1120;height:100vh;padding:20px}
+.main{flex:1}
+.topbar{height:60px;background:#0b1120;padding:15px}
 .content{padding:20px}
 
-.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
-.sc{background:var(--surface);padding:20px;border-radius:12px}
-
-.card{background:var(--surface);border-radius:12px;margin-bottom:20px}
-.ch{padding:14px;border-bottom:1px solid var(--border)}
-.cb{padding:20px}
-
-button{padding:6px 12px;border:none;border-radius:6px;background:#111827;color:#fff;cursor:pointer}
-button.active{background:var(--accent);color:#000}
-
-table{width:100%}
+.card{background:#0b1120;padding:20px;border-radius:12px;margin-bottom:20px}
+input,select{width:100%;padding:10px;margin:8px 0;background:#111827;color:white;border:1px solid #1e2d47;border-radius:8px}
+button{padding:10px;border:none;border-radius:8px;background:#00d4ff;color:black;cursor:pointer}
+table{width:100%;margin-top:10px}
 td,th{padding:8px}
 </style>
 </head>
@@ -44,7 +26,7 @@ td,th{padding:8px}
 <body>
 
 <div class="sidebar">
-  <div style="padding:20px;font-weight:bold">Admin</div>
+  <h3>Admin Panel</h3>
 </div>
 
 <div class="main">
@@ -53,38 +35,45 @@ td,th{padding:8px}
 
 <div class="content">
 
-<!-- FILTERS -->
-<div style="display:flex;gap:10px;margin-bottom:20px">
-  <button onclick="setFilter(event,'today')">Today</button>
-  <button onclick="setFilter(event,'week')">Week</button>
-  <button onclick="setFilter(event,'month')">Month</button>
-  <button onclick="setFilter(event,'all')" class="active">All</button>
-</div>
-
-<!-- STATS -->
-<div class="sg">
-  <div class="sc"><div>Total Patients</div><h2 id="dTP">—</h2></div>
-  <div class="sc"><div>Admitted</div><h2 id="dAP">—</h2></div>
-  <div class="sc"><div>Doctors</div><h2 id="dDr">—</h2></div>
-  <div class="sc"><div>Appointments</div><h2 id="dUA">—</h2></div>
-</div>
-
-<!-- TABLE -->
+<!-- ================= CREATE USER ================= -->
 <div class="card">
-<div class="ch">Appointments</div>
-<div class="cb">
-<table>
-<thead><tr><th>Time</th><th>Patient</th><th>Doctor</th></tr></thead>
-<tbody id="dashApptTbl"></tbody>
-</table>
-</div>
+  <h3>Create User</h3>
+
+  <input id="new_username" placeholder="Username">
+  <input id="new_password" placeholder="Password">
+
+  <select id="new_role">
+    <option value="ADMIN">Admin</option>
+    <option value="DOCTOR">Doctor</option>
+    <option value="PATIENT">Patient</option>
+  </select>
+
+  <button onclick="createUser()">Create User</button>
 </div>
 
-<!-- CHARTS -->
-<div class="card"><div class="ch">Appointments</div><div class="cb"><canvas id="apptChart"></canvas></div></div>
-<div class="card"><div class="ch">Patients</div><div class="cb"><canvas id="patientChart"></canvas></div></div>
-<div class="card"><div class="ch">Doctor Workload</div><div class="cb"><canvas id="doctorChart"></canvas></div></div>
-<div class="card"><div class="ch">Revenue</div><div class="cb"><canvas id="revenueChart"></canvas></div></div>
+<!-- ================= STATS ================= -->
+<div class="card">
+  <h3>Stats</h3>
+  <p>Total Patients: <span id="dTP">0</span></p>
+  <p>Doctors: <span id="dDr">0</span></p>
+  <p>Appointments: <span id="dUA">0</span></p>
+</div>
+
+<!-- ================= APPOINTMENTS ================= -->
+<div class="card">
+  <h3>Appointments</h3>
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Patient</th><th>Doctor</th></tr>
+    </thead>
+    <tbody id="dashApptTbl"></tbody>
+  </table>
+</div>
+
+<!-- ================= CHART ================= -->
+<div class="card">
+  <canvas id="apptChart"></canvas>
+</div>
 
 </div>
 </div>
@@ -92,144 +81,84 @@ td,th{padding:8px}
 <script src="js/api.js"></script>
 
 <script>
-let allPats=[],allDocs=[],allAppts=[];
-let apptChart,patientChart,doctorChart,revenueChart;
-let currentFilter='all';
 
-// INIT
+// ================= INIT =================
 async function init(){
- if(!API.requireRole('admin')) return;
- await loadAll();
+  if(!API.requireRole("ADMIN")) return;
+  loadData();
 }
 
-// LOAD
-async function loadAll(){
- allPats=await API.getPatients();
- allDocs=await API.getDoctors();
- allAppts=await API.getAppointments();
+// ================= LOAD DATA =================
+async function loadData(){
+  try{
+    const patients = await API.getPatients();
+    const doctors = await API.getDoctors();
+    const appts = await API.getAppointments();
 
- buildDash();
- buildCharts();
- buildAdvanced();
+    dTP.textContent = patients.length;
+    dDr.textContent = doctors.length;
+    dUA.textContent = appts.length;
+
+    dashApptTbl.innerHTML = appts.slice(0,5).map(a=>`
+      <tr>
+        <td>${a.appointment_time || "-"}</td>
+        <td>${a.patient_username}</td>
+        <td>${a.doctor_username}</td>
+      </tr>
+    `).join("");
+
+    buildChart(appts);
+
+  }catch(e){
+    toast("Failed to load data","error");
+    console.error(e);
+  }
 }
 
-// FILTER
-function setFilter(e,type){
- currentFilter=type;
+// ================= CREATE USER =================
+async function createUser(){
+  const username = new_username.value;
+  const password = new_password.value;
+  const role = new_role.value;
 
- document.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
- e.target.classList.add('active');
+  if(!username || !password){
+    toast("Fill all fields","error");
+    return;
+  }
 
- buildCharts();
- buildAdvanced();
+  try{
+    await API.createUser({username,password,role});
+    toast("User created","success");
+
+    new_username.value="";
+    new_password.value="";
+
+  }catch(e){
+    toast("Failed","error");
+  }
 }
 
-// FILTER LOGIC
-function getFiltered(){
- const now=new Date();
+// ================= CHART =================
+function buildChart(appts){
+  const months = new Array(12).fill(0);
 
- return allAppts.filter(a=>{
-   if(!a.appointmentDate) return false;
-   const d=new Date(a.appointmentDate);
+  appts.forEach(a=>{
+    if(!a.appointment_date) return;
+    const m = new Date(a.appointment_date).getMonth();
+    months[m]++;
+  });
 
-   if(currentFilter==='today') return d.toDateString()===now.toDateString();
-
-   if(currentFilter==='week'){
-     return (now-d)/(1000*60*60*24)<=7;
-   }
-
-   if(currentFilter==='month'){
-     return d.getMonth()===now.getMonth();
-   }
-
-   return true;
- });
-}
-
-// DASH
-function buildDash(){
- dTP.textContent=allPats.length;
- dAP.textContent=allPats.filter(p=>p.status==='ADMITTED').length;
- dDr.textContent=allDocs.length;
- dUA.textContent=allAppts.length;
-
- dashApptTbl.innerHTML=allAppts.slice(0,5).map(a=>`
- <tr>
- <td>${a.appointmentTime||'-'}</td>
- <td>${a.patientName||a.patientUsername}</td>
- <td>${a.doctorName||a.doctorUsername}</td>
- </tr>`).join('');
-}
-
-// BASIC CHARTS
-function buildCharts(){
- const filtered=getFiltered();
-
- const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
- const counts=new Array(12).fill(0);
-
- filtered.forEach(a=>{
-   const m=new Date(a.appointmentDate).getMonth();
-   counts[m]++;
- });
-
- if(apptChart) apptChart.destroy();
-
- apptChart=new Chart(document.getElementById('apptChart'),{
-   type:'line',
-   data:{labels:months,datasets:[{data:counts,borderColor:'#00d4ff'}]}
- });
-
- const stat={ADMITTED:0,DISCHARGED:0,CRITICAL:0,OUTPATIENT:0};
-
- allPats.forEach(p=>{
-   if(stat[p.status]!=undefined) stat[p.status]++;
- });
-
- if(patientChart) patientChart.destroy();
-
- patientChart=new Chart(document.getElementById('patientChart'),{
-   type:'doughnut',
-   data:{labels:Object.keys(stat),datasets:[{data:Object.values(stat)}]}
- });
-}
-
-// ADVANCED
-function buildAdvanced(){
- const filtered=getFiltered();
-
- // doctor
- const map={};
- filtered.forEach(a=>{
-   const d=a.doctorName||a.doctorUsername;
-   map[d]=(map[d]||0)+1;
- });
-
- if(doctorChart) doctorChart.destroy();
-
- doctorChart=new Chart(document.getElementById('doctorChart'),{
-   type:'bar',
-   data:{labels:Object.keys(map),datasets:[{data:Object.values(map)}]}
- });
-
- // revenue
- const rev=new Array(12).fill(0);
-
- filtered.forEach(a=>{
-   if(a.status!=='COMPLETED') return;
-   const m=new Date(a.appointmentDate).getMonth();
-   rev[m]+=(a.consultationFee||500);
- });
-
- if(revenueChart) revenueChart.destroy();
-
- revenueChart=new Chart(document.getElementById('revenueChart'),{
-   type:'bar',
-   data:{labels:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],datasets:[{data:rev}]}
- });
+  new Chart(document.getElementById("apptChart"),{
+    type:"line",
+    data:{
+      labels:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      datasets:[{data:months,borderColor:"#00d4ff"}]
+    }
+  });
 }
 
 init();
+
 </script>
 
 </body>
