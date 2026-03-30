@@ -6,31 +6,28 @@ from contextlib import asynccontextmanager
 import logging
 import os
 
-from core.config import settings
 from core.database import db
 from services.seed import seed_all
 
 # ✅ ROUTERS
 from routers import auth, admin, doctor, patient, ai
 
-
 # ─────────────────────────────────────────────
 # 🔹 LOGGING
 # ─────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
-    datefmt="%H:%M:%S"
+    format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger("nexgen")
-
 
 # ─────────────────────────────────────────────
 # 🔹 STARTUP / SHUTDOWN
 # ─────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🏥 NexGen Hospital starting...")
+    logger.info("🏥 Starting NexGen Hospital...")
+
     try:
         db.connect()
         seed_all()
@@ -38,24 +35,25 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Startup error: {e}")
 
+    port = os.environ.get("PORT", "10000")
+    logger.info(f"🚀 Running on port {port}")
+
     yield
 
     db.close()
-    logger.info("👋 NexGen Hospital stopped")
-
+    logger.info("👋 Shutdown complete")
 
 # ─────────────────────────────────────────────
-# 🔹 APP
+# 🔹 APP INIT
 # ─────────────────────────────────────────────
 app = FastAPI(
     title="NexGen Hospital API",
-    description="Hospital Management System with AI + Analytics + Security",
     version="3.0.0",
+    description="Hospital Management System with AI + Analytics + Security",
     lifespan=lifespan,
-    docs_url="/docs",     # ✅ FIXED (docs working)
+    docs_url="/docs",
     redoc_url="/redoc"
 )
-
 
 # ─────────────────────────────────────────────
 # 🔐 SECURITY HEADERS
@@ -65,32 +63,24 @@ async def security_headers(request: Request, call_next):
     response = await call_next(request)
 
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"  # ✅ FIX (docs need this)
+    response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     return response
 
-
 # ─────────────────────────────────────────────
-# 🌍 CORS (VERY IMPORTANT)
+# 🌍 CORS (VERY IMPORTANT FOR VERCEL)
 # ─────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*",  # ✅ for testing
-        "http://localhost:3000",
-        "http://127.0.0.1:5500",
-        "https://*.vercel.app"
-    ],
+    allow_origins=["*"],  # 🔥 change to your Vercel URL later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 # ─────────────────────────────────────────────
-# 🔗 API ROUTERS
+# 🔗 ROUTERS
 # ─────────────────────────────────────────────
 app.include_router(auth.router)
 app.include_router(admin.router)
@@ -98,47 +88,42 @@ app.include_router(doctor.router)
 app.include_router(patient.router)
 app.include_router(ai.router)
 
-
 # ─────────────────────────────────────────────
-# 📁 FRONTEND SERVING (OPTIONAL)
+# 📁 FRONTEND SERVING (OPTIONAL LOCAL)
 # ─────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "..", "frontend")
 
 if os.path.isdir(FRONTEND_DIR):
 
-    # Static folders
     app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
 
-    js_path = os.path.join(FRONTEND_DIR, "js")
-    if os.path.isdir(js_path):
-        app.mount("/js", StaticFiles(directory=js_path), name="js")
+    js_dir = os.path.join(FRONTEND_DIR, "js")
+    if os.path.isdir(js_dir):
+        app.mount("/js", StaticFiles(directory=js_dir), name="js")
 
-    # Helper
     def serve(page):
         return FileResponse(os.path.join(FRONTEND_DIR, page))
 
-    # Routes
     @app.get("/")
     def root():
-        return serve("index.html")   # ✅ FIX (home page)
+        return serve("login.html")
 
-    @app.get("/login")
+    @app.get("/login.html")
     def login():
         return serve("login.html")
 
-    @app.get("/admin")
+    @app.get("/admin.html")
     def admin_page():
         return serve("admin.html")
 
-    @app.get("/doctor")
+    @app.get("/doctor.html")
     def doctor_page():
         return serve("doctor.html")
 
-    @app.get("/patient")
+    @app.get("/patient.html")
     def patient_page():
         return serve("patient.html")
-
 
 # ─────────────────────────────────────────────
 # ❤️ HEALTH CHECK
@@ -151,9 +136,8 @@ def health():
         "version": "3.0.0"
     }
 
-
 # ─────────────────────────────────────────────
-# ℹ️ SYSTEM INFO
+# ℹ️ INFO
 # ─────────────────────────────────────────────
 @app.get("/info")
 def info():
@@ -162,15 +146,10 @@ def info():
         "version": "3.0.0",
         "features": [
             "JWT Authentication",
-            "Refresh Tokens",
-            "Admin Dashboard",
-            "Doctor Portal",
+            "Admin Panel",
+            "Doctor Dashboard",
             "Patient Portal",
-            "AI Disease Prediction",
-            "Risk Scoring",
-            "ICU Prediction",
-            "Revenue Analytics",
-            "AI Forecasting",
-            "Security Hardening"
+            "AI Predictions",
+            "Analytics Dashboard"
         ]
     }
