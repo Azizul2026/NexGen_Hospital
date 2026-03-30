@@ -13,6 +13,7 @@ from services.seed import seed_all
 # ✅ ROUTERS
 from routers import auth, admin, doctor, patient, ai
 
+
 # ─────────────────────────────────────────────
 # 🔹 LOGGING
 # ─────────────────────────────────────────────
@@ -30,16 +31,13 @@ logger = logging.getLogger("nexgen")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🏥 NexGen Hospital starting...")
-
     try:
         db.connect()
         seed_all()
         logger.info("✅ Database connected & seeded")
-
     except Exception as e:
         logger.error(f"❌ Startup error: {e}")
 
-    logger.info(f"🚀 Running on http://{settings.host}:{settings.port}")
     yield
 
     db.close()
@@ -54,20 +52,20 @@ app = FastAPI(
     description="Hospital Management System with AI + Analytics + Security",
     version="3.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
+    docs_url="/docs",     # ✅ FIXED (docs working)
     redoc_url="/redoc"
 )
 
 
 # ─────────────────────────────────────────────
-# 🔐 SECURITY HEADERS (VERY IMPORTANT)
+# 🔐 SECURITY HEADERS
 # ─────────────────────────────────────────────
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
 
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"  # ✅ FIX (docs need this)
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
@@ -75,11 +73,16 @@ async def security_headers(request: Request, call_next):
 
 
 # ─────────────────────────────────────────────
-# 🌍 CORS
+# 🌍 CORS (VERY IMPORTANT)
 # ─────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # ⚠️ CHANGE in production
+    allow_origins=[
+        "*",  # ✅ for testing
+        "http://localhost:3000",
+        "http://127.0.0.1:5500",
+        "https://*.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,47 +96,46 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(doctor.router)
 app.include_router(patient.router)
-app.include_router(ai.router)   # 🤖 AI ENABLED
+app.include_router(ai.router)
 
 
 # ─────────────────────────────────────────────
-# 📁 FRONTEND SERVING
+# 📁 FRONTEND SERVING (OPTIONAL)
 # ─────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "..", "frontend")
 
 if os.path.isdir(FRONTEND_DIR):
 
-    # ✅ Serve full frontend
+    # Static folders
     app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
 
-    # ✅ JS fix (VERY IMPORTANT)
     js_path = os.path.join(FRONTEND_DIR, "js")
     if os.path.isdir(js_path):
         app.mount("/js", StaticFiles(directory=js_path), name="js")
 
-    # ✅ Helper
+    # Helper
     def serve(page):
         return FileResponse(os.path.join(FRONTEND_DIR, page))
 
-    # ── ROUTES ──
+    # Routes
     @app.get("/")
     def root():
-        return serve("login.html")
+        return serve("index.html")   # ✅ FIX (home page)
 
-    @app.get("/login.html")
+    @app.get("/login")
     def login():
         return serve("login.html")
 
-    @app.get("/admin.html")
+    @app.get("/admin")
     def admin_page():
         return serve("admin.html")
 
-    @app.get("/doctor.html")
+    @app.get("/doctor")
     def doctor_page():
         return serve("doctor.html")
 
-    @app.get("/patient.html")
+    @app.get("/patient")
     def patient_page():
         return serve("patient.html")
 
