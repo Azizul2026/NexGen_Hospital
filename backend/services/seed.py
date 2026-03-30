@@ -35,7 +35,7 @@ def seed_admin():
         active: true,
         created_at: $today
     })
-    """, pw=hash_password("admin123"), today=str(date.today()))
+    """, pw=hash_password("admin123"[:72]), today=str(date.today()))
 
 
 # ================= DOCTORS =================
