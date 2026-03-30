@@ -1,10 +1,10 @@
 /**
- * NexGen Hospital — API Client (FINAL STABLE VERSION)
+ * NexGen Hospital — API Client (FINAL WORKING VERSION)
  */
 
 const API = (() => {
 
-  // 🌐 BACKEND URL
+  // 🌐 BACKEND URL (IMPORTANT)
   const BASE = "https://nexgen-hospital-app.onrender.com";
 
   // ================= TOKEN =================
@@ -24,7 +24,6 @@ const API = (() => {
         ...(body && { body: JSON.stringify(body) })
       });
 
-      // 🔥 FIX: safely read response
       const text = await res.text();
 
       let data = {};
@@ -35,13 +34,13 @@ const API = (() => {
         throw new Error("Server error (invalid JSON)");
       }
 
-      // 🔁 HANDLE UNAUTHORIZED
+      // 🔁 UNAUTHORIZED
       if (res.status === 401) {
         logout();
         throw new Error("Session expired. Please login again.");
       }
 
-      // ❌ HANDLE ERROR
+      // ❌ ERROR
       if (!res.ok) {
         throw new Error(data.detail || data.message || "Request failed");
       }
@@ -63,24 +62,32 @@ const API = (() => {
 
   // ================= AUTH =================
   async function login(username, password) {
-    const res = await post("/api/auth/login", { username, password });
+    try {
+      const res = await post("/api/auth/login", { username, password });
 
-    // 🔥 FIX: flexible response handling
-    const d = res.data || res;
+      console.log("LOGIN RESPONSE:", res); // 🔥 DEBUG
 
-    if (d.token || d.access_token) {
+      const d = res.data || res;
 
-      const tokenVal = d.token || d.access_token;
+      if (d.token) {
+        // ✅ SAVE
+        localStorage.setItem("nexgen_token", d.token);
+        localStorage.setItem("nexgen_username", d.username || username);
+        localStorage.setItem("nexgen_role", (d.role || "ADMIN").toUpperCase());
+        localStorage.setItem("nexgen_name", d.fullName || "");
 
-      localStorage.setItem("nexgen_token", tokenVal);
-      localStorage.setItem("nexgen_username", d.username || username);
-      localStorage.setItem("nexgen_role", d.role || "ADMIN");
-      localStorage.setItem("nexgen_name", d.fullName || "");
+        // 🔥 REDIRECT (MAIN FIX)
+        window.location.href = roleHome(d.role);
 
-      return d;
+        return d;
+      }
+
+      throw new Error("Login failed");
+
+    } catch (err) {
+      console.error("LOGIN ERROR:", err);
+      alert(err.message || "Login failed");
     }
-
-    throw new Error(res.message || "Login failed");
   }
 
   function logout() {
@@ -110,7 +117,6 @@ const API = (() => {
       return false;
     }
 
-    // 🔥 FIX: normalize role
     const role = (user.role || "").toUpperCase();
 
     if (roles.length && !roles.map(r => r.toUpperCase()).includes(role)) {
@@ -145,7 +151,7 @@ const API = (() => {
 
   async function getPatients() {
     const res = await get("/api/admin/patients");
-    return res.data || res || [];
+    return res.data || [];
   }
 
   async function addPatient(data) {
@@ -154,7 +160,7 @@ const API = (() => {
 
   async function getDoctors() {
     const res = await get("/api/admin/doctors");
-    return res.data || res || [];
+    return res.data || [];
   }
 
   async function addDoctor(data) {
@@ -163,7 +169,7 @@ const API = (() => {
 
   async function getAppointments() {
     const res = await get("/api/admin/appointments");
-    return res.data || res || [];
+    return res.data || [];
   }
 
   async function addAppointment(data) {
@@ -172,12 +178,12 @@ const API = (() => {
 
   async function getRecords() {
     const res = await get("/api/admin/records");
-    return res.data || res || [];
+    return res.data || [];
   }
 
   async function getDashboard() {
     const res = await get("/api/admin/dashboard");
-    return res.data || res || {};
+    return res.data || {};
   }
 
   // ================= AI APIs =================
