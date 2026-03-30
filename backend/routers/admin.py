@@ -14,28 +14,18 @@ router = APIRouter(prefix="/api/admin", tags=["Admin"])
 # 🔥 CREATE USER (FIXED WITH SCHEMA)
 # =========================================================
 @router.post("/create-user")
-def create_user(body: UserCreate):   # 🔥 removed admin_only
-
-    # check existing
-    if db.run_one("MATCH (u:User {username:$u}) RETURN u", u=body.username):
-        raise HTTPException(400, "Username already exists")
+def create_user():
 
     db.run("""
     CREATE (u:User {
-        username:$username,
-        password:$password,
-        role:$role,
-        active:true,
-        created_at:$today
+        username:'admin',
+        password:'admin123',
+        role:'ADMIN',
+        active:true
     })
-    """,
-    username=body.username,
-    password=hash_password(body.password),
-    role=body.role.upper(),
-    today=str(date.today())
-    )
+    """)
 
-    return APIResponse.ok(message=f"{body.role} created successfully")
+    return {"message": "Admin created (raw)"}
 
 
 # =========================================================
