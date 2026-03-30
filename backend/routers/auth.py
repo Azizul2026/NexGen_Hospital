@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from core.security import create_access_token, create_refresh_token, verify_token
+from core.security import create_access_token, create_refresh_token, verify_token, verify_password
 from core.database import db
 from passlib.context import CryptContext
 
@@ -19,8 +19,8 @@ def login(data: dict):
     password = data.get("password")
 
     # ❌ VALIDATION
-    if not username or not password:
-        raise HTTPException(400, "Username and password required")
+    if not verify_password(password, user["password"]):
+    raise HTTPException(401, "Invalid username or password")
 
     # 🔍 FIND USER
     row = db.run_one("MATCH (u:User {username:$u}) RETURN u", u=username)
