@@ -64,12 +64,11 @@ app = FastAPI(
 # ─────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://nex-gen-hospital-app.vercel.app"
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],   # ✅ allow everything
+    allow_credentials=False,  # 🔥 IMPORTANT CHANGE
     allow_methods=["*"],
     allow_headers=["*"],
+)["*"],
 )
 
 # ─────────────────────────────────────────────
