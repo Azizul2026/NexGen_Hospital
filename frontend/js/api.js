@@ -1,10 +1,10 @@
 /**
- * NexGen Hospital — API Client (FINAL WORKING VERSION)
+ * NexGen Hospital — API Client (FINAL PROJECT READY)
  */
 
 const API = (() => {
 
-  // 🌐 BACKEND URL (IMPORTANT)
+  // 🌐 BACKEND URL
   const BASE = "https://nexgen-hospital-app.onrender.com";
 
   // ================= TOKEN =================
@@ -21,6 +21,7 @@ const API = (() => {
       const res = await fetch(`${BASE}${path}`, {
         method,
         headers: headers(),
+        mode: "cors", // 🔥 IMPORTANT FIX
         ...(body && { body: JSON.stringify(body) })
       });
 
@@ -31,16 +32,14 @@ const API = (() => {
         data = text ? JSON.parse(text) : {};
       } catch {
         console.error("RAW RESPONSE:", text);
-        throw new Error("Server error (invalid JSON)");
+        throw new Error("Server error");
       }
 
-      // 🔁 UNAUTHORIZED
       if (res.status === 401) {
         logout();
-        throw new Error("Session expired. Please login again.");
+        throw new Error("Session expired");
       }
 
-      // ❌ ERROR
       if (!res.ok) {
         throw new Error(data.detail || data.message || "Request failed");
       }
@@ -63,20 +62,20 @@ const API = (() => {
   // ================= AUTH =================
   async function login(username, password) {
     try {
-      const res = await post("/auth/login", { username, password });
+      // 🔥 FIXED URL (THIS WAS YOUR MAIN BUG)
+      const res = await post("/api/auth/login", { username, password });
 
-      console.log("LOGIN RESPONSE:", res); // 🔥 DEBUG
+      console.log("LOGIN RESPONSE:", res);
 
-      const d = res.data || res;
+      if (res.success && res.data) {
+        const d = res.data;
 
-      if (d.token) {
-        // ✅ SAVE
         localStorage.setItem("nexgen_token", d.token);
-        localStorage.setItem("nexgen_username", d.username || username);
-        localStorage.setItem("nexgen_role", (d.role || "ADMIN").toUpperCase());
+        localStorage.setItem("nexgen_username", d.username);
+        localStorage.setItem("nexgen_role", d.role);
         localStorage.setItem("nexgen_name", d.fullName || "");
 
-        // 🔥 REDIRECT (MAIN FIX)
+        // 🔥 REDIRECT
         window.location.href = roleHome(d.role);
 
         return d;
