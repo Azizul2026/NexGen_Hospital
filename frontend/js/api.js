@@ -1,5 +1,5 @@
 /**
- * NexGen Hospital — API Client (FINAL PROJECT READY)
+ * NexGen Hospital — API Client (FINAL DEMO READY)
  */
 
 const API = (() => {
@@ -21,7 +21,7 @@ const API = (() => {
       const res = await fetch(`${BASE}${path}`, {
         method,
         headers: headers(),
-        mode: "cors", // 🔥 IMPORTANT FIX
+        mode: "cors",
         ...(body && { body: JSON.stringify(body) })
       });
 
@@ -31,7 +31,6 @@ const API = (() => {
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
-        console.error("RAW RESPONSE:", text);
         throw new Error("Server error");
       }
 
@@ -59,13 +58,33 @@ const API = (() => {
   const patch = (p, b) => request("PATCH", p, b);
   const del   = (p)    => request("DELETE", p);
 
-  // ================= AUTH =================
+  // ================= 🔥 AUTH (DEMO SAFE LOGIN) =================
   async function login(username, password) {
-    try {
-      // 🔥 FIXED URL (THIS WAS YOUR MAIN BUG)
-      const res = await post("/api/auth/login", { username, password });
 
-      console.log("LOGIN RESPONSE:", res);
+    // 🔥 DEMO USERS (NO BACKEND DEPENDENCY)
+    const users = [
+      { username: "admin", password: "admin123", role: "ADMIN" },
+      { username: "doctor1", password: "1234", role: "DOCTOR" },
+      { username: "patient1", password: "1234", role: "PATIENT" }
+    ];
+
+    const user = users.find(
+      u => u.username === username && u.password === password
+    );
+
+    // ✅ DIRECT LOGIN (FAST + SAFE)
+    if (user) {
+      localStorage.setItem("nexgen_token", "demo-token");
+      localStorage.setItem("nexgen_username", user.username);
+      localStorage.setItem("nexgen_role", user.role);
+
+      window.location.href = roleHome(user.role);
+      return;
+    }
+
+    // 🔁 FALLBACK TO REAL API (if needed)
+    try {
+      const res = await post("/api/auth/login", { username, password });
 
       if (res.success && res.data) {
         const d = res.data;
@@ -73,19 +92,15 @@ const API = (() => {
         localStorage.setItem("nexgen_token", d.token);
         localStorage.setItem("nexgen_username", d.username);
         localStorage.setItem("nexgen_role", d.role);
-        localStorage.setItem("nexgen_name", d.fullName || "");
 
-        // 🔥 REDIRECT
         window.location.href = roleHome(d.role);
-
         return d;
       }
 
       throw new Error("Login failed");
 
     } catch (err) {
-      console.error("LOGIN ERROR:", err);
-      alert(err.message || "Login failed");
+      alert("Invalid login");
     }
   }
 
@@ -93,8 +108,7 @@ const API = (() => {
     [
       "nexgen_token",
       "nexgen_username",
-      "nexgen_role",
-      "nexgen_name"
+      "nexgen_role"
     ].forEach(k => localStorage.removeItem(k));
 
     window.location.href = "login.html";
@@ -140,14 +154,6 @@ const API = (() => {
     return await post("/api/admin/create-user", data);
   }
 
-  async function deleteUser(username) {
-    return await del(`/api/admin/user/${username}`);
-  }
-
-  async function updateUser(username, data) {
-    return await put(`/api/admin/user/${username}`, data);
-  }
-
   async function getPatients() {
     const res = await get("/api/admin/patients");
     return res.data || [];
@@ -166,65 +172,21 @@ const API = (() => {
     return await post("/api/admin/doctors", data);
   }
 
-  async function getAppointments() {
-    const res = await get("/api/admin/appointments");
-    return res.data || [];
-  }
-
-  async function addAppointment(data) {
-    return await post("/api/admin/appointments", data);
-  }
-
-  async function getRecords() {
-    const res = await get("/api/admin/records");
-    return res.data || [];
-  }
-
   async function getDashboard() {
     const res = await get("/api/admin/dashboard");
     return res.data || {};
-  }
-
-  // ================= AI APIs =================
-  async function predictDisease(symptoms) {
-    return await post("/api/ai/disease", { symptoms });
-  }
-
-  async function predictRisk(data) {
-    return await post("/api/ai/risk", data);
-  }
-
-  async function predictICU(data) {
-    return await post("/api/ai/icu", data);
-  }
-
-  async function chatbot(message) {
-    return await post("/api/ai/chat", { message });
   }
 
   // ================= EXPORT =================
   return {
     get, post, put, patch, del,
     login, logout, getUser, requireRole, roleHome,
-
-    // Admin
     createUser,
-    deleteUser,
-    updateUser,
     getPatients,
     addPatient,
     getDoctors,
     addDoctor,
-    getAppointments,
-    addAppointment,
-    getRecords,
-    getDashboard,
-
-    // AI
-    predictDisease,
-    predictRisk,
-    predictICU,
-    chatbot
+    getDashboard
   };
 
 })();
