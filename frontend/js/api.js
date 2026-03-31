@@ -63,7 +63,7 @@ const API = (() => {
   // ================= AUTH =================
   async function login(username, password) {
     try {
-      const res = await post("/api/auth/login", { username, password });
+      const res = await post("/auth/login", { username, password });
 
       console.log("LOGIN RESPONSE:", res); // 🔥 DEBUG
 
